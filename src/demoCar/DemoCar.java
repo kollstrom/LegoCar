@@ -17,12 +17,18 @@ import static java.lang.System.out;
 import lejos.hardware.Sound;
 
 public class DemoCar{
+	
+	private static int oldSteeringWheelTilt = 0;
+	private static int oldSteeringWheelDepth = -700;
+	private static int oldSeatBackAngle = 0;
+	private static int oldSeatDepth = 0;
+	private static int oldMirrorLeft = 0;
+	private static int oldMirrorRight = 0;
+	
 	public static void main(String[] args) throws IOException {
 		
-		
 		try{
-			boolean ongoing = true;
-			String in;
+			String in, newAngle;
 			
 			/*
 			 * LegoCar default values (angles) and information:
@@ -73,7 +79,7 @@ public class DemoCar{
 			
 			System.out.println("Starting program...");
 			ServerSocket serverSocket = new ServerSocket(4321);
-			System.out.println("W8 4 ctrlr 2 start...");
+			System.out.println("W8 4ctrlr2 start...");
 			Socket servSock = serverSocket.accept();
 			System.out.println("Ctrlr started...");
 			
@@ -88,16 +94,19 @@ public class DemoCar{
 			motorThree.setSpeed(100);
 
 			BufferedReader input = new BufferedReader(new InputStreamReader(servSock.getInputStream()));
-			
-			while (ongoing){ 
+
+			while (true){ 
+						
+				System.out.println("W8ing 4 change:");
+				in = input.readLine();
 				
-				System.out.println("W8ing 4 input...");
-				in = input.readLine(); //reads what to change, radio (that needs a unique handling) or one of the motors
-									   //or if the program has to quit
+				//reads what to change, radio (that needs a unique handling) or one of the motors
+				//or if the program has to quit
+				
 				
 				if (in.equals("radioStation")){
-					File soundFile = new File("abc.wav");
-					out.println(Sound.playSample(soundFile));
+					//File soundFile = new File("abc.wav");
+					//out.println(Sound.playSample(soundFile));
 				}
 				
 				else if (in.equals("quit")){
@@ -108,13 +117,14 @@ public class DemoCar{
 					motorTwo.close();
 					motorThree.close();
 					servSock.close();
-					ongoing = false;
+					break;
 				}
 				
 				else{
 
 					//the stateChanger moves the gears so they are connected to the right things (seatBackAngle, leftMirror,...)
-					
+					in = input.readLine();
+
 					currentStateChangerAngle = rotateStateChanger(Integer.parseInt(in), stateChanger, currentStateChangerAngle, motorOne, motorTwo, motorThree, currentSeatBackAngle, currentSeatDepth, currentLeftMirror, currentRightMirror, currentSteeringWheelDepth, currentSteeringWheelTilt, motorOneFunctionOne, motorOneFunctionTwo, MotorTwoFunctionThree);
 
 					/*
@@ -122,7 +132,7 @@ public class DemoCar{
 					 * are assigned the their current angles since that doesn't happen automatically, you can tell the
 					 * motors where rotate to, but they can't tell you where they are at the moment
 					 */
-
+					System.out.println(currentStateChangerAngle);
 					if (currentStateChangerAngle == 0){
 						currentMotorOneAngle = motorOneFunctionOne;
 						currentMotorTwoAngle = currentSeatBackAngle;
@@ -138,9 +148,9 @@ public class DemoCar{
 						currentMotorTwoAngle = MotorTwoFunctionThree;
 						currentMotorThreeAngle = currentSteeringWheelTilt;
 					}
-					
+										
 					in = input.readLine(); //reads which motor to should rotate for the following angle
-					
+					newAngle = input.readLine(); //read which angle to change to
 					/*
 					 * Depending on the current stateChanger state and the motor that has to rotate,
 					 * the different things in the car are moved and their angles are saved in their
@@ -148,36 +158,38 @@ public class DemoCar{
 					 * 
 					 * The "input" variable send as argument is just a bufferedReader
 					 */
-					
-					if (in.equals("1")){
-						currentRightMirror = rotateMotor(input, motorOne, 10); 
+
+					if (Integer.parseInt(in) == 1){
+						currentRightMirror = changeRightMirror(Integer.parseInt(newAngle), motorOne); 
 					}
-					else if (in.equals("2")){
+					else if (Integer.parseInt(in) == 2){
 						if (currentStateChangerAngle == 0){
-							currentSeatBackAngle = rotateMotor(input, motorTwo, 0);
+							currentSeatBackAngle = changeSeatBackAngle(Integer.parseInt(newAngle), motorTwo);
 						}
 						else if (currentStateChangerAngle == 160){
-							currentSeatDepth = rotateMotor(input, motorTwo, 70);
+							currentSeatDepth = changeSeatDepth(Integer.parseInt(newAngle), motorTwo);
 						}
-						
 					}
-					else if (in.equals("3")){
+					else if (Integer.parseInt(in) == 3){
 						if (currentStateChangerAngle == 0){
-							currentSteeringWheelDepth = rotateMotor(input, motorThree, 70);
+							currentSteeringWheelDepth = changeSteeringWheelDepth(Integer.parseInt(newAngle), motorThree);
 						}
 						else if (currentStateChangerAngle == 160){
-							currentLeftMirror = rotateMotor(input, motorThree, 10);
+							currentLeftMirror = changeLeftMirror(Integer.parseInt(newAngle), motorThree);
 						}
-						else if (currentStateChangerAngle == 320)
+						else if (currentStateChangerAngle == 320){
 							motorThree.setSpeed(200);
-							currentSteeringWheelTilt = rotateMotor(input, motorThree, -210);
+							currentSteeringWheelTilt = changeSteeringWheelTilt(Integer.parseInt(newAngle), motorThree);
 							motorThree.setSpeed(100);
+						}
 					}
-				}
+				}				
 			}			
 		}
 		catch (Exception e){
-			e.printStackTrace();
+			System.out.println(e);
+			Delay.msDelay(10000);
+			
 		}
 	}
 	
@@ -199,34 +211,67 @@ public class DemoCar{
 		}
 	}
 	
-	/*  
-	 * Rotates a motor with the given input angle and sends back a converted version of the input angle value
-	 * The 'factor' parameter is needed since the motors have to rotate more degrees than the inputAngle,
-	 * to reach the desired positions
+	/*
+	 * The following 6 methods are used to calculate the exact amount degrees the motors have to
+	 * turn and in which direction (+/-), where the incoming angle (new angle) is multiplied
+	 * by a factor so that the i.e. seats turning is equal to the desired input from the app
 	 */
 	
-	public static int rotateMotor(BufferedReader input, RegulatedMotor motor, int factor){
-		try{
-			int inputAngle = Integer.parseInt(input.readLine());
-			if (factor == 0){
-				if (inputAngle < 0 || inputAngle > 0){
-					motor.rotate(inputAngle * 12);
-					return calculateCurrentFunctionMotorAngle(inputAngle);
-				}
-				else if (inputAngle == 0){
-					motor.rotate(inputAngle);
-					return calculateCurrentFunctionMotorAngle(inputAngle);
-				}
-			}
-			else{
-				motor.rotate(inputAngle * factor);
-				return calculateCurrentFunctionMotorAngle(inputAngle);
-			}
+	public static int changeSeatBackAngle(int newAngle, RegulatedMotor motor){
+		newAngle *= 160;
+		int returnValue = rotateMotor(motor, newAngle - oldSeatBackAngle);
+		oldSeatBackAngle = newAngle;
+		return returnValue;
+	}
+	
+	public static int changeSeatDepth(int newAngle, RegulatedMotor motor){
+		newAngle *= 70;
+		if (newAngle > oldSeatDepth){
+			int returnValue = rotateMotor(motor, newAngle - oldSeatDepth);
+			oldSeatDepth = newAngle;
+			return returnValue;
 		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
-		return 0;
+		int returnValue = rotateMotor(motor, oldSeatDepth - newAngle);
+		oldSeatDepth = newAngle;
+		return returnValue;
+		
+	}
+	
+	public static int changeSteeringWheelTilt(int newAngle, RegulatedMotor motor){
+		newAngle *= -210;
+		int returnValue = rotateMotor(motor, newAngle - oldSteeringWheelTilt);
+		oldSteeringWheelTilt = newAngle;
+		return returnValue;
+	}
+	
+	public static int changeLeftMirror(int newAngle, RegulatedMotor motor){
+		newAngle *= 8;
+		int returnValue = rotateMotor(motor, newAngle - oldMirrorLeft);
+		oldMirrorLeft = newAngle;
+		return returnValue;
+	}
+	
+	public static int changeRightMirror(int newAngle, RegulatedMotor motor){
+		newAngle *= 10;
+		int returnValue = rotateMotor(motor, newAngle - oldMirrorRight);
+		oldMirrorRight = newAngle;
+		return returnValue;
+	}
+	
+	public static int changeSteeringWheelDepth(int newAngle, RegulatedMotor motor){
+		newAngle *= -70;
+		int returnValue = rotateMotor(motor, newAngle - oldSteeringWheelDepth);
+		oldSteeringWheelDepth = newAngle;
+		return returnValue;
+	}
+	
+	
+	
+	
+	public static int rotateMotor(RegulatedMotor motor, int angle){
+		
+			motor.rotate(angle);
+			return calculateCurrentFunctionMotorAngle(angle);
 	}
 	
 	/*
@@ -278,7 +323,7 @@ public class DemoCar{
 				}
 			}
 		}
-		return 0;
+		return desiredAngleInput;
 	}
 	
 	/*
