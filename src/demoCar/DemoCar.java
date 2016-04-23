@@ -19,8 +19,8 @@ import lejos.hardware.Sound;
 public class DemoCar{
 	
 	private static int oldSteeringWheelTilt = 0;
-	private static int oldSteeringWheelDepth = -700;
-	private static int oldSeatBackAngle = 0;
+	private static int oldSteeringWheelDepth = -600;
+	private static int oldSeatBackAngle = -1260;
 	private static int oldSeatDepth = 0;
 	private static int oldMirrorLeft = 0;
 	private static int oldMirrorRight = 0;
@@ -29,6 +29,7 @@ public class DemoCar{
 		
 		try{
 			String in, newAngle;
+			int stateChangerAngleNeeded = 0, motorToRotate = 1;
 			
 			/*
 			 * LegoCar default values (angles) and information:
@@ -46,12 +47,12 @@ public class DemoCar{
 			 * 
 			 * motorOne:   mirror right, positive input -> mirror moves backwards (max values +-250) default 0
 			 * motorTwo:   seatBack, positive input -> seatBack moves forward (1600 max) default 0
-			 * 		       seatDepth. positive input -> seat moves backwards (700 max) default 0
+			 * 		       seatDepth. positive input -> seat moves backwards (600 max) default 0
 			 * motorThree: steering wheel depth, positive input -> swd moves backwards (700 max) default 340
 			 * 			   leftMirror, positive input -> mirror moves ... (max +-200) default 0
 			 * 			   steering wheel tilt, positive input -> tilt moves downwards (-2100 max) default 0
 			 * 
-			 * 
+			 * remember, the default angles change with motorspeed
 			 */
 			
 			
@@ -88,23 +89,26 @@ public class DemoCar{
 			RegulatedMotor motorTwo = new EV3LargeRegulatedMotor(MotorPort.C);
 			RegulatedMotor motorThree = new EV3MediumRegulatedMotor(MotorPort.D);
 				
-			stateChanger.setSpeed(100);
-			motorOne.setSpeed(100);
-			motorTwo.setSpeed(100);
-			motorThree.setSpeed(100);
+			stateChanger.setSpeed(200);
+			motorOne.setSpeed(200);
+			motorTwo.setSpeed(200);
+			motorThree.setSpeed(200);
 
 			BufferedReader input = new BufferedReader(new InputStreamReader(servSock.getInputStream()));
 
 			while (true){ 
 						
-				System.out.println("W8ing 4 change:");
+				System.out.println("W8ing 4 input...");
 				in = input.readLine();
+				System.out.println("Changing " + in);
+				System.out.println(currentStateChangerAngle);
 				
 				//reads what to change, radio (that needs a unique handling) or one of the motors
 				//or if the program has to quit
 				
 				
 				if (in.equals("radioStation")){
+					in = input.readLine();
 					//File soundFile = new File("abc.wav");
 					//out.println(Sound.playSample(soundFile));
 				}
@@ -121,18 +125,41 @@ public class DemoCar{
 				}
 				
 				else{
-
+					
+					if (in.equals("seatBackAngle")){
+						stateChangerAngleNeeded = 0;
+						motorToRotate = 2;
+					}
+					else if (in.equals("seatDepth")){
+						stateChangerAngleNeeded = 160;
+						motorToRotate = 2;
+					}
+					else if (in.equals("wingMirrorRightY")){
+						stateChangerAngleNeeded = 320;
+						motorToRotate = 1;
+					}
+					else if (in.equals("wingMirrorLeftY")){
+						stateChangerAngleNeeded = 160;
+						motorToRotate = 3;
+					}
+					else if (in.equals("steeringWheelDepth")){
+						stateChangerAngleNeeded = 0;
+						motorToRotate = 3;
+					}
+					else if (in.equals("steeringWheelTilt")){
+						stateChangerAngleNeeded = 320;
+						motorToRotate = 3;
+					}
+					
 					//the stateChanger moves the gears so they are connected to the right things (seatBackAngle, leftMirror,...)
-					in = input.readLine();
-
-					currentStateChangerAngle = rotateStateChanger(Integer.parseInt(in), stateChanger, currentStateChangerAngle, motorOne, motorTwo, motorThree, currentSeatBackAngle, currentSeatDepth, currentLeftMirror, currentRightMirror, currentSteeringWheelDepth, currentSteeringWheelTilt, motorOneFunctionOne, motorOneFunctionTwo, MotorTwoFunctionThree);
-
+					currentStateChangerAngle = rotateStateChanger(stateChangerAngleNeeded, stateChanger, currentStateChangerAngle, motorOne, motorTwo, motorThree, currentSeatBackAngle, currentSeatDepth, currentLeftMirror, currentRightMirror, currentSteeringWheelDepth, currentSteeringWheelTilt, motorOneFunctionOne, motorOneFunctionTwo, MotorTwoFunctionThree);
+					
 					/*
 					 * depending on which state the gears are on, the 3 motors, that are used to drive the cars functions
-					 * are assigned the their current angles since that doesn't happen automatically, you can tell the
+					 * are assigned to their current angles since that doesn't happen automatically, you can tell the
 					 * motors where rotate to, but they can't tell you where they are at the moment
 					 */
-					System.out.println(currentStateChangerAngle);
+
 					if (currentStateChangerAngle == 0){
 						currentMotorOneAngle = motorOneFunctionOne;
 						currentMotorTwoAngle = currentSeatBackAngle;
@@ -148,9 +175,9 @@ public class DemoCar{
 						currentMotorTwoAngle = MotorTwoFunctionThree;
 						currentMotorThreeAngle = currentSteeringWheelTilt;
 					}
-										
-					in = input.readLine(); //reads which motor to should rotate for the following angle
+
 					newAngle = input.readLine(); //read which angle to change to
+					
 					/*
 					 * Depending on the current stateChanger state and the motor that has to rotate,
 					 * the different things in the car are moved and their angles are saved in their
@@ -158,11 +185,11 @@ public class DemoCar{
 					 * 
 					 * The "input" variable send as argument is just a bufferedReader
 					 */
-
-					if (Integer.parseInt(in) == 1){
+					
+					if (motorToRotate == 1){
 						currentRightMirror = changeRightMirror(Integer.parseInt(newAngle), motorOne); 
 					}
-					else if (Integer.parseInt(in) == 2){
+					else if (motorToRotate == 2){
 						if (currentStateChangerAngle == 0){
 							currentSeatBackAngle = changeSeatBackAngle(Integer.parseInt(newAngle), motorTwo);
 						}
@@ -170,7 +197,7 @@ public class DemoCar{
 							currentSeatDepth = changeSeatDepth(Integer.parseInt(newAngle), motorTwo);
 						}
 					}
-					else if (Integer.parseInt(in) == 3){
+					else if (motorToRotate == 3){
 						if (currentStateChangerAngle == 0){
 							currentSteeringWheelDepth = changeSteeringWheelDepth(Integer.parseInt(newAngle), motorThree);
 						}
@@ -178,9 +205,7 @@ public class DemoCar{
 							currentLeftMirror = changeLeftMirror(Integer.parseInt(newAngle), motorThree);
 						}
 						else if (currentStateChangerAngle == 320){
-							motorThree.setSpeed(200);
 							currentSteeringWheelTilt = changeSteeringWheelTilt(Integer.parseInt(newAngle), motorThree);
-							motorThree.setSpeed(100);
 						}
 					}
 				}				
@@ -218,7 +243,7 @@ public class DemoCar{
 	 */
 	
 	public static int changeSeatBackAngle(int newAngle, RegulatedMotor motor){
-		newAngle *= 160;
+		newAngle *= 14;
 		int returnValue = rotateMotor(motor, newAngle - oldSeatBackAngle);
 		oldSeatBackAngle = newAngle;
 		return returnValue;
@@ -245,21 +270,21 @@ public class DemoCar{
 	}
 	
 	public static int changeLeftMirror(int newAngle, RegulatedMotor motor){
-		newAngle *= 8;
+		newAngle *= 14;
 		int returnValue = rotateMotor(motor, newAngle - oldMirrorLeft);
 		oldMirrorLeft = newAngle;
 		return returnValue;
 	}
 	
 	public static int changeRightMirror(int newAngle, RegulatedMotor motor){
-		newAngle *= 10;
+		newAngle *= 14;
 		int returnValue = rotateMotor(motor, newAngle - oldMirrorRight);
 		oldMirrorRight = newAngle;
 		return returnValue;
 	}
 	
 	public static int changeSteeringWheelDepth(int newAngle, RegulatedMotor motor){
-		newAngle *= -70;
+		newAngle *= -60;
 		int returnValue = rotateMotor(motor, newAngle - oldSteeringWheelDepth);
 		oldSteeringWheelDepth = newAngle;
 		return returnValue;
@@ -279,13 +304,13 @@ public class DemoCar{
 	 * gears crash into each other while moving between the states
 	 */
 	
-	public static int rotateStateChanger(int desiredAngleInput, RegulatedMotor stateChanger, int currentAngle, RegulatedMotor motorOne, RegulatedMotor motorTwo, RegulatedMotor motorThree, int sba, int sd, int lm, int rm, int swd, int swt, int mofo, int moft, int mtfth){
+	public static int rotateStateChanger(int requiredAngle, RegulatedMotor stateChanger, int currentAngle, RegulatedMotor motorOne, RegulatedMotor motorTwo, RegulatedMotor motorThree, int sba, int sd, int lm, int rm, int swd, int swt, int mofo, int moft, int mtfth){
 
-		if (desiredAngleInput < currentAngle){
+		if (requiredAngle < currentAngle){
 			
 			while (true){
 				
-				if (desiredAngleInput == currentAngle){
+				if (requiredAngle == currentAngle){
 					return currentAngle;
 				}
 				else if (currentAngle == 320 || currentAngle == 160){ //if the state is one of the two given angles, the stateChanger can rotate to the next state without changing anything else since the next states are empty anyway
@@ -302,11 +327,11 @@ public class DemoCar{
 				}
 			}
 		}
-		else if (desiredAngleInput > currentAngle){
+		else if (requiredAngle > currentAngle){
 			
 			while (true){
 				
-				if (desiredAngleInput == currentAngle){
+				if (requiredAngle == currentAngle){
 					return currentAngle;
 				}
 				else if (currentAngle == 0 || currentAngle == 160){ //if the state is one of the two given angles, the stateChanger can rotate to the next state without changing anything else since the next states are empty anyway
@@ -323,7 +348,7 @@ public class DemoCar{
 				}
 			}
 		}
-		return desiredAngleInput;
+		return requiredAngle;
 	}
 	
 	/*
