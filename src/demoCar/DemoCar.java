@@ -7,14 +7,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import lejos.robotics.RegulatedMotor;
+import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.motor.EV3MediumRegulatedMotor;
 import lejos.hardware.port.MotorPort;
 import lejos.utility.Delay;
 
 import java.io.File;
-import static java.lang.System.out;
-import lejos.hardware.Sound;
 
 public class DemoCar{
 	
@@ -30,6 +29,7 @@ public class DemoCar{
 		try{
 			String in, newAngle;
 			int stateChangerAngleNeeded = 0, motorToRotate = 1;
+			File song = new File("good.wav");
 			
 			/*
 			 * LegoCar default values (angles) and information:
@@ -101,16 +101,35 @@ public class DemoCar{
 				System.out.println("W8ing 4 input...");
 				in = input.readLine();
 				System.out.println("Changing " + in);
-				System.out.println(currentStateChangerAngle);
 				
 				//reads what to change, radio (that needs a unique handling) or one of the motors
 				//or if the program has to quit
 				
-				
 				if (in.equals("radioStation")){
 					in = input.readLine();
-					//File soundFile = new File("abc.wav");
-					//out.println(Sound.playSample(soundFile));
+					System.out.println(in);
+					if (in.equals("good")){
+						song = new File("good.wav");
+					}
+					else if (in.equals("batman")){
+						song = new File("batman.wav");
+					}
+					else if (in.equals("empire")){
+						song = new File("empire.wav");
+					}
+					else if (in.equals("less")){
+						song = new File("less.wav");
+					}
+					else if (in.equals("hello")){
+						song = new File("hello.wav");
+					}
+					else if (in.equals("highway")){
+						song = new File("highway.wav");
+					}
+					
+					playSong(song);
+
+					
 				}
 				
 				else if (in.equals("quit")){
@@ -218,10 +237,26 @@ public class DemoCar{
 		}
 	}
 	
+	/*
+	 * This method plays a part of a song that located on the EV3 brick, it is played when the
+	 * "radio" is changed
+	 */
+	
+	private static void playSong(File song) {
+		Sound.setVolume(50);
+		Sound.playSample(song);
+		try{
+			Thread.sleep(Sound.getTime());
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+	
 	/* 
 	 * Calculates an incoming angle value to 0-360 degree value and returns it
 	 */
-	
+
 	public static int calculateCurrentFunctionMotorAngle(int angle){
 		while (true){
 			if (angle >= 360){
