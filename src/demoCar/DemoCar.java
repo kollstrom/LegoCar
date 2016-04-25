@@ -108,22 +108,22 @@ public class DemoCar{
 				if (in.equals("radioStation")){
 					in = input.readLine();
 					System.out.println(in);
-					if (in.equals("good")){
+					if (in.equals("P1")){
 						song = new File("good.wav");
 					}
-					else if (in.equals("batman")){
+					else if (in.equals("P2")){
 						song = new File("batman.wav");
 					}
-					else if (in.equals("empire")){
+					else if (in.equals("P3")){
 						song = new File("empire.wav");
 					}
-					else if (in.equals("less")){
+					else if (in.equals("P4")){
 						song = new File("less.wav");
 					}
-					else if (in.equals("hello")){
+					else if (in.equals("P5")){
 						song = new File("hello.wav");
 					}
-					else if (in.equals("highway")){
+					else if (in.equals("P6")){
 						song = new File("highway.wav");
 					}
 					
