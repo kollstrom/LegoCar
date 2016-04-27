@@ -107,25 +107,42 @@ public class DemoCar{
 				
 				if (in.equals("radioStation")){
 					in = input.readLine();
-					System.out.println(in);
 					if (in.equals("P1")){
 						song = new File("good.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: ");
+						System.out.println("Johnny be good");
 					}
 					else if (in.equals("P2")){
 						song = new File("batman.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: ");
+						System.out.println("Batman");
 					}
 					else if (in.equals("P3")){
 						song = new File("empire.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: ");
+						System.out.println("Empire State...");
 					}
 					else if (in.equals("P4")){
 						song = new File("less.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: ");
+						System.out.println("Little less Co...");
 					}
 					else if (in.equals("P5")){
 						song = new File("hello.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: Hello");
 					}
 					else if (in.equals("P6")){
 						song = new File("highway.wav");
+						System.out.println("Radiostation: " + in);
+						System.out.println("Current song: ");
+						System.out.println("Highway to Hell");
 					}
+					System.out.println("\n\n");
 					
 					playSong(song);
 
@@ -243,7 +260,7 @@ public class DemoCar{
 	 */
 	
 	private static void playSong(File song) {
-		Sound.setVolume(50);
+		Sound.setVolume(100);
 		Sound.playSample(song);
 		try{
 			Thread.sleep(Sound.getTime());
@@ -285,16 +302,10 @@ public class DemoCar{
 	}
 	
 	public static int changeSeatDepth(int newAngle, RegulatedMotor motor){
-		newAngle *= 70;
-		if (newAngle > oldSeatDepth){
+		newAngle *= 60;
 			int returnValue = rotateMotor(motor, newAngle - oldSeatDepth);
 			oldSeatDepth = newAngle;
 			return returnValue;
-		}
-		int returnValue = rotateMotor(motor, oldSeatDepth - newAngle);
-		oldSeatDepth = newAngle;
-		return returnValue;
-		
 	}
 	
 	public static int changeSteeringWheelTilt(int newAngle, RegulatedMotor motor){
