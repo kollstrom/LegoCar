@@ -309,7 +309,7 @@ public class DemoCar{
 	}
 	
 	public static int changeSteeringWheelTilt(int newAngle, RegulatedMotor motor){
-		newAngle *= -210;
+		newAngle *= -23;
 		int returnValue = rotateMotor(motor, newAngle - oldSteeringWheelTilt);
 		oldSteeringWheelTilt = newAngle;
 		return returnValue;
